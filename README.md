@@ -1,7 +1,5 @@
 # ESP32 Deep Sleep 관련 코드 설명 (MicroPython)
 
----
-
 ## 주요 코드 및 설명
 
 ### 1. `rtc = machine.RTC()`
