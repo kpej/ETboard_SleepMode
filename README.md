@@ -1,32 +1,22 @@
 # ESP32 Deep Sleep 관련 코드 설명 (MicroPython)
 
-본 문서는 `basic` 디렉토리에 있는 ESP32 Deep Sleep 예제들 (`10s`, `60s`, `10m`)에서 사용된 **슬립 관련 핵심 코드**에 대한 설명입니다.
-
 ---
 
 ## 주요 코드 및 설명
 
-### 1. `import machine`
-- MicroPython의 하드웨어 제어 모듈
-- 슬립 모드, 타이머, RTC, 핀 제어 등을 사용할 수 있음
-
----
-
-### 2. `rtc = machine.RTC()`
+### 1. `rtc = machine.RTC()`
 - RTC(Real-Time Clock) 객체 생성
 - 슬립 모드에서도 작동 가능
 - RTC를 이용해 일정 시간 후 자동으로 기기를 깨울 수 있음
 
----
 
-### 3. `rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)`
+### 2. `rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)`
 - RTC 인터럽트 설정
 - `rtc.ALARM0` 발생 시 슬립 모드 해제
 - `wake=machine.DEEPSLEEP` 으로 설정 시 Deep Sleep에서 자동으로 복귀 가능
 
----
 
-### 4. `rtc.alarm(rtc.ALARM0, duration_ms)`
+### 3. `rtc.alarm(rtc.ALARM0, duration_ms)`
 - RTC 알람 타이머 설정
 - `duration_ms` 밀리초(ms) 후 알람 발생
 - 슬립 시간 지정 예시:
@@ -34,23 +24,20 @@
   - 60초: `rtc.alarm(rtc.ALARM0, 60000)`
   - 10분: `rtc.alarm(rtc.ALARM0, 600000)`
 
----
 
-### 5. `machine.deepsleep()`
+### 4. `machine.deepsleep()`
 - Deep Sleep 모드로 진입
 - 대부분의 하드웨어가 꺼지고 초저전력 상태가 됨
 - 지정된 RTC 알람 시간 이후 자동으로 재시작됨
 - 재시작 시 `boot.py` → `main.py` 순서로 실행됨
 
----
 
-### 6. `machine.reset_cause()`
+### 5. `machine.reset_cause()`
 - 리셋(재시작)의 원인을 확인
 - 슬립 해제 후 기기가 부팅된 경우, 다음 중 하나를 반환:
   - `machine.DEEPSLEEP_RESET`: Deep Sleep에서 깨어남
   - `machine.PWRON_RESET`: 일반 전원 부팅
 
----
 
 ## 코드 흐름 예시 (공통 구조)
 
