@@ -1,39 +1,62 @@
-# ETboard_SleepMode
+# ESP32 Deep Sleep 관련 코드 설명 (MicroPython)
 
+본 문서는 `basic` 디렉토리에 있는 ESP32 Deep Sleep 예제들 (`10s`, `60s`, `10m`)에서 사용된 **슬립 관련 핵심 코드**에 대한 설명입니다.
 
-## 슬립 모드 종류
+---
 
-| 모드 | 전력 소비 | 깨어나는 시간 | 특징 |
-|------|------------|----------------|-------|
-| Light Sleep | 낮음 | 빠름 (ms 단위) | CPU 일시 중단, RAM 및 주변 장치는 유지됨 |
-| Deep Sleep | 매우 낮음 | 느림 (ms~s 단위) | 대부분의 부품 전원 차단, RTC 메모리와 일부 기능만 유지 |
+## 주요 코드 및 설명
 
+### 1. `import machine`
+- MicroPython의 하드웨어 제어 모듈
+- 슬립 모드, 타이머, RTC, 핀 제어 등을 사용할 수 있음
 
-## 주요 특징
+---
 
-- **Light Sleep**: CPU 클럭을 멈추고, 필요할 때 빠르게 복귀. 인터럽트나 타이머 이벤트로 깨어남.
-- **Deep Sleep**: 전력 소비를 가장 효과적으로 줄일 수 있는 모드. 깨어나면 부팅부터 다시 시작되며, RAM 데이터는 유지되지 않음.
+### 2. `rtc = machine.RTC()`
+- RTC(Real-Time Clock) 객체 생성
+- 슬립 모드에서도 작동 가능
+- RTC를 이용해 일정 시간 후 자동으로 기기를 깨울 수 있음
 
+---
 
-## 슬립 모드의 깨우기 조건 (Wake-up Sources)
+### 3. `rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)`
+- RTC 인터럽트 설정
+- `rtc.ALARM0` 발생 시 슬립 모드 해제
+- `wake=machine.DEEPSLEEP` 으로 설정 시 Deep Sleep에서 자동으로 복귀 가능
 
-ESP32는 슬립 모드에서 다양한 방법으로 깨어날 수 있습니다:
+---
 
-- **RTC 타이머**: 지정한 시간 이후 자동으로 복귀
-- **GPIO 인터럽트**: 외부 신호에 반응하여 깨어남
-- **터치 패드 입력**: 터치 감지로 복귀
-- **ULP(초저전력) 코프로세서**: 간단한 조건 검사로 깨어남
+### 4. `rtc.alarm(rtc.ALARM0, duration_ms)`
+- RTC 알람 타이머 설정
+- `duration_ms` 밀리초(ms) 후 알람 발생
+- 슬립 시간 지정 예시:
+  - 10초: `rtc.alarm(rtc.ALARM0, 10000)`
+  - 60초: `rtc.alarm(rtc.ALARM0, 60000)`
+  - 10분: `rtc.alarm(rtc.ALARM0, 600000)`
 
+---
 
-## 사용 시 주의사항
+### 5. `machine.deepsleep()`
+- Deep Sleep 모드로 진입
+- 대부분의 하드웨어가 꺼지고 초저전력 상태가 됨
+- 지정된 RTC 알람 시간 이후 자동으로 재시작됨
+- 재시작 시 `boot.py` → `main.py` 순서로 실행됨
 
-- **Deep Sleep 이후에는 RAM이 초기화**되므로, 상태를 유지하려면 RTC 메모리 또는 플래시 저장소(NVS 등)를 사용해야 함
-- 슬립 중에도 특정 핀(GPIO)을 통해 외부 신호를 감지하고 싶다면, 해당 핀에 대해 슬립 상태에서의 동작을 별도로 설정해야 함
+---
 
+### 6. `machine.reset_cause()`
+- 리셋(재시작)의 원인을 확인
+- 슬립 해제 후 기기가 부팅된 경우, 다음 중 하나를 반환:
+  - `machine.DEEPSLEEP_RESET`: Deep Sleep에서 깨어남
+  - `machine.PWRON_RESET`: 일반 전원 부팅
 
-## 적용 예시
+---
 
-- 간헐적으로 데이터를 수집하고 전송하는 센서 노드
-- 버튼 입력 또는 외부 이벤트가 있을 때만 동작하는 장치
-- 일정 시간 간격으로 작동하는 주기적 작업 (예: 환경 모니터링)
+## 코드 흐름 예시 (공통 구조)
 
+```text
+1. RTC 객체 생성
+2. 알람 인터럽트 및 wake 조건 설정
+3. 슬립 시간(ms) 설정
+4. Deep Sleep 진입
+5. 설정된 시간이 지나면 자동으로 깨어나 재시작
